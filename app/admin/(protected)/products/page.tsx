@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { formatNaira } from "@/lib/currency";
 import type { Product } from "@/lib/types";
 import DeleteProductButton from "@/components/admin/DeleteProductButton";
+import { cloudinaryImageUrl, cloudinaryVideoUrl } from "@/lib/cloudinary-delivery";
 
 export default async function AdminProductsPage() {
   const supabase = createAdminClient();
@@ -20,7 +21,7 @@ export default async function AdminProductsPage() {
             {products.map((product) => {
               const first = [...(product.product_media || [])].sort((a,b) => a.display_order-b.display_order)[0];
               return <div className="admin-product-row" key={product.id}>
-                <div className="admin-thumb">{first?.media_type === "image" ? <Image src={first.url} alt="" fill sizes="70px" /> : first?.media_type === "video" ? <video src={first.url} /> : <span>NL</span>}</div>
+                <div className="admin-thumb">{first?.media_type === "image" ? <Image src={cloudinaryImageUrl(first.url, 160)} alt="" fill sizes="70px" unoptimized /> : first?.media_type === "video" ? <video src={cloudinaryVideoUrl(first.url, 480)} preload="metadata" muted playsInline /> : <span>NL</span>}</div>
                 <div className="admin-product-name"><strong>{product.name}</strong><span>{product.category?.name || "Uncategorised"}</span></div>
                 <div><strong>{formatNaira(product.price)}</strong></div>
                 <div><span className={`status-pill ${product.available ? "live" : "off"}`}>{product.available ? "Available" : "Hidden"}</span></div>

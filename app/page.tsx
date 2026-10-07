@@ -4,17 +4,18 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import EmptyProducts from "@/components/EmptyProducts";
+import CategoryCard from "@/components/CategoryCard";
 import { getCategories, getFeaturedProducts, getNewestProducts } from "@/lib/data";
 import { brand, whatsappLink } from "@/lib/brand";
 
 const fallbackCategories = [
-  ["Bangles", "bangles"],
-  ["Bracelets", "bracelets"],
-  ["Necklaces", "necklaces"],
-  ["Wristwatches", "wristwatches"],
-  ["Sunglasses", "sunglasses"],
-  ["Luxury Chains", "luxury-chains"],
-  ["Unisex Wristbands", "unisex-wristbands"],
+  { name: "Bangles", slug: "bangles" },
+  { name: "Bracelets", slug: "bracelets" },
+  { name: "Necklaces", slug: "necklaces" },
+  { name: "Wristwatches", slug: "wristwatches" },
+  { name: "Sunglasses", slug: "sunglasses" },
+  { name: "Luxury Chains", slug: "luxury-chains" },
+  { name: "Unisex Wristbands", slug: "unisex-wristbands" },
 ];
 
 export const revalidate = 60;
@@ -26,7 +27,7 @@ export default async function HomePage() {
     getNewestProducts().catch(() => []),
   ]);
 
-  const visibleCategories = categories.length ? categories.map((c) => [c.name, c.slug]) : fallbackCategories;
+  const visibleCategories = categories.length ? categories : fallbackCategories;
 
   return (
     <>
@@ -39,7 +40,7 @@ export default async function HomePage() {
               <h1>Luxury that feels <em>effortless.</em></h1>
               <p>Curated jewelry and accessories designed to make every outfit feel complete — from everyday polish to special moments.</p>
               <div className="hero-actions">
-                <Link href="#collections" className="button button-dark">Explore Collections <ArrowRight size={17} /></Link>
+                <Link href="/collections" className="button button-dark">Explore Collections <ArrowRight size={17} /></Link>
                 <a href={whatsappLink()} className="button button-light" target="_blank" rel="noreferrer"><MessageCircle size={17} /> Shop on WhatsApp</a>
               </div>
               <div className="hero-proof">
@@ -66,17 +67,29 @@ export default async function HomePage() {
           <div className="container">
             <div className="section-heading split-heading">
               <div><span className="eyebrow-text">Shop by category</span><h2>Find your signature piece.</h2></div>
-              <p>Browse every Nikky Luxe collection in one place.</p>
+              <p>Browse every Nikky Luxe collection in one place. <Link href="/collections" className="inline-link">View all</Link></p>
             </div>
             <div className="category-grid">
-              {visibleCategories.map(([name, slug], index) => (
-                <Link href={`/collections/${slug}`} className="category-card" key={slug}>
-                  <span className="category-number">0{index + 1}</span>
-                  <div className="category-icon"><Gem size={24} /></div>
-                  <h3>{name}</h3>
-                  <span className="category-link">View collection <ArrowRight size={15} /></span>
-                </Link>
+              {visibleCategories.map((category, index) => (
+                <CategoryCard category={category} index={index} key={category.slug} />
               ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="home-offer-section" aria-label="Nikky Luxe special offers">
+          <div className="container">
+            <div className="home-offer-card">
+              <div className="home-offer-copy">
+                <span className="eyebrow-text light">A little something special</span>
+                <h2>Luxury, at a special price.</h2>
+                <p>Discover selected Nikky Luxe pieces currently available at special prices.</p>
+                <Link href="/offers" className="button home-offer-button">View Special Offers <ArrowRight size={17} /></Link>
+              </div>
+              <div className="home-offer-mark" aria-hidden="true">
+                <span>NL</span>
+                <small>Special Edit</small>
+              </div>
             </div>
           </div>
         </section>
@@ -88,7 +101,7 @@ export default async function HomePage() {
               <h2>Featured pieces</h2>
               <p>Pieces the Nikky Luxe team is highlighting right now.</p>
             </div>
-            {featured.length ? <div className="product-grid">{featured.map((p) => <ProductCard key={p.id} product={p} />)}</div> : <EmptyProducts label="featured collection" />}
+            {featured.length ? <div className="product-grid">{featured.map((p, index) => <ProductCard key={p.id} product={p} priority={index < 2} />)}</div> : <EmptyProducts label="featured collection" />}
           </div>
         </section>
 

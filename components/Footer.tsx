@@ -25,7 +25,6 @@ export default function Footer() {
       </div>
       <div className="container footer-bottom">
         <span>© {new Date().getFullYear()} Nikky Luxe. All rights reserved.</span>
-        <Link href="/admin/login">Admin</Link>
       </div>
     </footer>
   );

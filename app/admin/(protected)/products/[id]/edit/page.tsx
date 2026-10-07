@@ -7,7 +7,7 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
   const { id } = await params;
   const supabase = createAdminClient();
   const [{ data: product }, { data: categories }] = await Promise.all([
-    supabase.from("products").select("*, category:categories(*), product_media(*)").eq("id", id).maybeSingle(),
+    supabase.from("products").select("*, category:categories(*), product_media(*), product_variants(*, product_variant_media(*))").eq("id", id).maybeSingle(),
     supabase.from("categories").select("*").order("display_order"),
   ]);
   if (!product) notFound();

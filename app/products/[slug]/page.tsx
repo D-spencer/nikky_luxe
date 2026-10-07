@@ -1,58 +1,93 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Check, MessageCircle } from "lucide-react";
+import { headers } from "next/headers";
+import { ArrowLeft } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import ProductPurchase from "@/components/ProductPurchase";
 import { getProduct } from "@/lib/data";
-import { formatNaira } from "@/lib/currency";
-import { whatsappLink } from "@/lib/brand";
+import { brand } from "@/lib/brand";
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
   const { slug } = await params;
   const product = await getProduct(slug).catch(() => null);
-  return { title: product?.name || "Product", description: product?.description || "Shop this Nikky Luxe piece." };
+
+  const image = product?.product_media?.find(
+    (item) => item.media_type === "image"
+  )?.url;
+
+  const title = product?.name || "Product";
+  const description =
+    product?.description || "Shop this Nikky Luxe piece.";
+
+  return {
+    title,
+    description,
+
+    alternates: {
+      canonical: `/products/${slug}`,
+    },
+
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      images: image
+        ? [
+            {
+              url: image,
+              alt: `${title} — Nikky Luxe`,
+            },
+          ]
+        : [{ url: "/og-image.jpg?v=20261005", alt: "Nikky Luxe — Premium Jewelry and Accessories" }],
+    },
+
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: image ? [image] : ["/og-image.jpg?v=20261005"],
+    },
+  };
 }
 
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const product = await getProduct(slug).catch(() => null);
+  const nonce = (await headers()).get("x-nonce") || undefined;
 
-  if (!product) {
-    return <><Header /><main className="not-found"><h1>Piece not found.</h1><Link href="/">Return home</Link></main><Footer /></>;
-  }
+  if (!product) return <><Header /><main className="not-found"><h1>Piece not found.</h1><Link href="/collections">Browse collections</Link></main><Footer /></>;
 
   const media = [...(product.product_media || [])].sort((a, b) => a.display_order - b.display_order);
-  const orderMessage = `Hello Nikky Luxe, I am interested in ${product.name}${product.price ? ` (${formatNaira(product.price)})` : ""}. Is it available?`;
+  const productUrl = `${process.env.NEXT_PUBLIC_SITE_URL || ""}/products/${product.slug}`;
+  const image = media.find((item) => item.media_type === "image")?.url;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: product.description || undefined,
+    image: image ? [image] : undefined,
+    url: productUrl || undefined,
+    brand: { "@type": "Brand", name: brand.name },
+    offers: product.price ? { "@type": "Offer", priceCurrency: "NGN", price: product.price, availability: "https://schema.org/InStock", url: productUrl || undefined } : undefined,
+  };
 
   return (
     <>
       <Header />
       <main className="subpage-main">
         <section className="product-detail section">
-          <div className="container product-detail-grid">
-            <div>
-              <Link href={product.category ? `/collections/${product.category.slug}` : "/"} className="back-link"><ArrowLeft size={15} /> Back to collection</Link>
-              <div className="product-gallery">
-                {media.length ? media.map((item, index) => (
-                  <div className="gallery-item" key={item.id}>
-                    {item.media_type === "image" ? <Image src={item.url} alt={`${product.name} ${index + 1}`} fill sizes="(max-width: 900px) 100vw, 55vw" priority={index === 0} /> : <video src={item.url} controls playsInline />}
-                  </div>
-                )) : <div className="gallery-item media-placeholder"><span>NL</span></div>}
-              </div>
-            </div>
-            <aside className="product-info">
-              <span className="eyebrow-text">{product.category?.name || "Nikky Luxe"}</span>
-              <h1>{product.name}</h1>
-              <div className="detail-price">{formatNaira(product.price)}</div>
-              {product.description && <p>{product.description}</p>}
-              <div className="availability"><Check size={17} /> {product.available ? "Available to order" : "Currently unavailable"}</div>
-              <a className="button button-dark wide" href={whatsappLink(orderMessage)} target="_blank" rel="noreferrer"><MessageCircle size={18} /> Order on WhatsApp</a>
-              <div className="detail-note">For final stock confirmation, delivery cost and payment details, speak directly with Nikky Luxe on WhatsApp.</div>
-            </aside>
+          <div className="container">
+            <Link href={product.category ? `/collections/${product.category.slug}` : "/collections"} className="back-link"><ArrowLeft size={15} /> Back to collection</Link>
+<ProductPurchase product={product} generalMedia={media} />
           </div>
         </section>
       </main>
+      <script nonce={nonce} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
       <Footer />
     </>
   );
